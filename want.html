@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#0e1014">
+<title>Bazar do Brandão — WANT</title>
+<style>
+/* ---------------------------------------------------------- base / tema  */
+:root{
+  --bg:#0e1014; --bg2:#15181f; --bg3:#1c212b;
+  --linha:#2a3140; --txt:#eef1f6; --txt2:#9aa4b8; --txt3:#6b7587;
+  --dourado:#d9b44a; --dourado-esc:#8d7020;
+  --laranja:#ff9524; --laranja-esc:#c96f12;
+  --verde:#37b46a; --vermelho:#e05a5a;
+  --raio:14px;
+  --barra:calc(64px + env(safe-area-inset-bottom));
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}  /* precisa vir antes dos display:flex abaixo */
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.4;
+  overflow-x:hidden;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:var(--dourado)}
+
+/* ------------------------------------------------------------- mensagens */
+#erro{
+  margin:12px; padding:14px; border-radius:var(--raio);
+  background:#3a1d1d; border:1px solid #6b2b2b; color:#ffd9d9; font-size:14px;
+}
+#erro code{display:block;margin-top:6px;font-size:12px;color:#ffb4b4;word-break:break-word}
+noscript div{margin:12px;padding:14px;border-radius:var(--raio);background:#3a1d1d;color:#ffd9d9}
+
+/* ----------------------------------------------------------------- topo  */
+.topo{
+  position:sticky; top:0; z-index:30;
+  background:rgba(14,16,20,.97);
+  border-bottom:1px solid var(--linha);
+  padding:calc(10px + env(safe-area-inset-top)) 12px 8px;
+}
+.marca{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.marca-sigla{
+  width:36px;height:36px;flex:0 0 36px;border-radius:10px;
+  background:linear-gradient(145deg,var(--dourado),var(--dourado-esc));
+  color:#20180a;font-weight:800;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+.marca-txt{min-width:0;flex:1 1 auto}
+.marca h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-.2px}
+/* Alternador HAVE / WANT. Fica sempre visivel no topo dos dois paineis, e
+   funciona sem JavaScript porque sao dois links de verdade. */
+.alternar{display:flex;gap:8px;margin-bottom:9px}
+.alternar a{
+  flex:1 1 0;padding:10px 8px;border-radius:11px;text-align:center;text-decoration:none;
+  font-size:13.5px;font-weight:800;letter-spacing:1.3px;
+  border:1px solid transparent;
+}
+.alternar .aba-have{background:var(--laranja);color:#000;border-color:var(--laranja-esc)}
+.alternar .aba-want{background:#24405e;color:#bfe0ff;border-color:#3d6a96}
+/* a aba do painel que NAO esta aberto fica vazada, para dar a entender que da
+   para tocar e trocar */
+.alternar .fora.aba-have{background:transparent;color:var(--laranja);border-color:var(--laranja-esc)}
+.alternar .fora.aba-want{background:transparent;color:#8fc5f5;border-color:#3d6a96}
+.alternar .aqui{box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.marca p{margin:1px 0 0;font-size:11.5px;color:var(--txt2)}
+
+.busca{position:relative;margin-bottom:8px}
+.busca input{
+  width:100%;padding:11px 38px 11px 36px;border-radius:11px;
+  background:var(--bg3);border:1px solid var(--linha);
+  font-size:16px; /* 16px evita zoom automatico no iOS */
+  -webkit-appearance:none;appearance:none;
+}
+.busca input::-webkit-search-cancel-button{-webkit-appearance:none}
+.busca input:focus{outline:none;border-color:var(--dourado)}
+.busca .lupa{position:absolute;left:11px;top:50%;margin-top:-8px;width:16px;height:16px;opacity:.5}
+.busca .limpar{
+  position:absolute;right:4px;top:50%;margin-top:-15px;
+  width:30px;height:30px;border-radius:50%;color:var(--txt2);font-size:18px;line-height:30px;text-align:center;
+}
+
+/* --------------------------------------------------------------- filtros */
+/* Busca, filtros e ordenacao so existem se o JavaScript rodar. Escondidos por
+   padrao, o boot do script marca <html class="js"> e eles aparecem. Assim, num
+   visualizador que nao executa script (o Quick Look do iPhone, por exemplo), a
+   pessoa ve o catalogo em vez de controles mortos. */
+.controles{display:none}
+html.js .controles{display:block}
+.acao{display:none}
+html.js .acao{display:block}
+
+.filtros{display:flex;flex-direction:column;gap:6px}
+.chips{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
+  padding:6px 11px;border-radius:999px;white-space:nowrap;
+  background:var(--bg3);border:1px solid var(--linha);
+  color:var(--txt2);font-size:12.5px;font-weight:600;
+}
+.chip.on{background:var(--dourado);border-color:var(--dourado);color:#20180a}
+.chip .pip{width:12px;height:12px;border-radius:50%;flex:0 0 12px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.pip-W{background:#f6e9c2}.pip-U{background:#61a7d8}.pip-B{background:#5d5763}
+.pip-R{background:#e0705f}.pip-G{background:#5aa86f}.pip-C{background:#b9b3a8}
+.pip-M{background:linear-gradient(135deg,#f6e9c2 0 20%,#61a7d8 20% 40%,#5d5763 40% 60%,#e0705f 60% 80%,#5aa86f 80%)}
+
+.linha-info{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.linha-info .cont{font-size:12px;color:var(--txt3)}
+/* Laranja de proposito: e o unico jeito de a pessoa perceber, no celular,
+   que essa caixa e clicavel e que da para reordenar a lista. */
+.linha-info select{
+  background-color:var(--laranja);color:#000;font-weight:700;
+  border:1px solid var(--laranja-esc);border-radius:9px;
+  padding:6px 26px 6px 10px;font-size:12.5px;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+}
+.linha-info select option{background:#fff;color:#000}
+
+/* ----------------------------------------------------------------- grade */
+.grade{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  gap:10px;padding:12px 12px var(--barra);
+}
+@media (min-width:700px){.grade{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;padding-left:18px;padding-right:18px}}
+
+.carta{
+  background:var(--bg2);border:1px solid var(--linha);border-radius:var(--raio);
+  overflow:hidden;display:flex;flex-direction:column;
+  content-visibility:auto;contain-intrinsic-size:auto 300px;
+}
+.carta.no-carrinho{border-color:var(--dourado)}
+
+.moldura{position:relative;width:100%;padding-top:139.4%;background:var(--bg3);overflow:hidden}
+/* A foto e camada de fundo, nao tag <img>. Quando a imagem nao carrega -- o
+   Quick Look do iPhone nao baixa imagem da internet -- nao sobra icone de
+   imagem quebrada nem texto alternativo: a camada fica transparente e aparece
+   o nome da carta que esta atras. */
+.moldura .foto{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+}
+.moldura .fallback{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:10px;font-size:11.5px;color:var(--txt2);
+}
+.tag-foil{
+  position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:999px;
+  font-size:10px;font-weight:800;letter-spacing:.3px;color:#1a1405;
+  background:linear-gradient(120deg,#ffe9a3,#9fe0ff,#ffc0f0,#c9ffd0);
+}
+.tag-qtd{
+  position:absolute;top:6px;right:6px;min-width:22px;height:22px;border-radius:999px;
+  background:var(--dourado);color:#20180a;font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;padding:0 5px;
+}
+.tag-estoque{
+  position:absolute;bottom:6px;right:6px;padding:2px 6px;border-radius:6px;
+  background:rgba(0,0,0,.72);color:#dfe5f0;font-size:10px;font-weight:600;
+}
+
+.corpo{padding:8px 9px 9px;display:flex;flex-direction:column;flex:1 1 auto;gap:2px}
+.nome{font-size:12.8px;font-weight:700;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:32px}
+.nomept{font-size:10.5px;color:var(--txt3);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.meta{font-size:10.5px;color:var(--txt3);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.preco{font-size:19px;font-weight:800;color:var(--dourado);margin-top:5px;letter-spacing:-.4px}
+.procuro{font-size:14px;font-weight:800;color:#8fc5f5;margin-top:5px}
+.edicao-nota{font-size:10.5px;color:var(--txt3);margin-top:2px;line-height:1.3}
+.edicao-nota.fixa{
+  color:#bfe0ff;background:#1b2e44;border:1px solid #2f5273;
+  border-radius:7px;padding:3px 6px;margin-top:4px;font-weight:600;
+}
+.preco small{font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:0}
+
+/* ------------------------------------------------------------- stepper  */
+html.js .acao{margin-top:7px}
+.btn-add{
+  width:100%;padding:9px;border-radius:10px;font-size:13px;font-weight:700;
+  background:var(--bg3);border:1px solid var(--linha);color:var(--txt);
+}
+.btn-add:active{background:var(--dourado);color:#20180a}
+.btn-add[disabled]{opacity:.4}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{
+  width:34px;height:34px;flex:0 0 34px;border-radius:9px;font-size:19px;font-weight:700;
+  background:var(--bg3);border:1px solid var(--linha);line-height:1;
+}
+.stepper button:active{background:var(--dourado);color:#20180a}
+.stepper button[disabled]{opacity:.3}
+.stepper .n{flex:1 1 auto;text-align:center;font-size:15px;font-weight:800;color:var(--dourado)}
+
+#vazio{padding:50px 24px;text-align:center;color:var(--txt2);font-size:14px}
+#sentinela{height:1px}
+.carregando{padding:14px;text-align:center;color:var(--txt3);font-size:12px}
+
+.pe{padding:20px 16px calc(var(--barra) + 16px);text-align:center;color:var(--txt3);font-size:11.5px;line-height:1.6;border-top:1px solid var(--linha)}
+
+/* ------------------------------------------------------- barra carrinho */
+.barra{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  background:rgba(21,24,31,.98);border-top:1px solid var(--linha);
+}
+.barra button{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px;border-radius:12px;font-weight:800;font-size:14.5px;
+  background:linear-gradient(145deg,var(--dourado),#c19c32);color:#20180a;
+}
+
+/* ---------------------------------------------------------------- modais */
+.modal{position:fixed;inset:0;z-index:60;display:flex}
+.modal .fundo{position:absolute;inset:0;background:rgba(0,0,0,.72)}
+.folha{
+  position:relative;margin-top:auto;width:100%;max-height:88%;
+  background:var(--bg2);border-radius:18px 18px 0 0;border-top:1px solid var(--linha);
+  display:flex;flex-direction:column;
+}
+@media (min-width:700px){.folha{margin:auto;max-width:520px;border-radius:18px;border:1px solid var(--linha)}}
+.folha-topo{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--linha);
+}
+.folha-topo h2{margin:0;font-size:15.5px}
+.fechar{width:32px;height:32px;border-radius:50%;background:var(--bg3);font-size:17px;color:var(--txt2);flex:0 0 32px}
+.folha-lista{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 16px;flex:1 1 auto}
+.folha-pe{padding:12px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--linha)}
+
+.item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--linha)}
+.item:last-child{border-bottom:0}
+.item .it-foto{
+  width:40px;height:56px;border-radius:5px;flex:0 0 40px;background:var(--bg3);
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+}
+.item .it-nome{font-size:13px;font-weight:700;line-height:1.25}
+.item .it-meta{font-size:10.5px;color:var(--txt3);margin-top:2px}
+.item .it-dir{margin-left:auto;text-align:right;flex:0 0 auto}
+.item .it-preco{font-size:13.5px;font-weight:800;color:var(--dourado);white-space:nowrap}
+.item .stepper{margin-top:5px;gap:4px}
+.item .stepper button{width:28px;height:28px;flex:0 0 28px;font-size:16px}
+.item .stepper .n{font-size:13px;min-width:22px;flex:0 0 22px}
+
+.total{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.total span{font-size:12.5px;color:var(--txt2)}
+.total strong{font-size:23px;color:var(--dourado);letter-spacing:-.5px}
+.botoes{display:flex;gap:8px}
+.botoes button{flex:1 1 0;padding:12px;border-radius:11px;font-size:13.5px;font-weight:700;background:var(--bg3);border:1px solid var(--linha)}
+.botoes .primario{background:linear-gradient(145deg,var(--dourado),#c19c32);color:#20180a;border-color:transparent}
+.botoes .perigo{color:var(--vermelho)}
+.aviso-copia{margin-top:9px;font-size:11.5px;color:var(--verde);text-align:center;min-height:15px}
+#area-copia{position:absolute;left:-9999px;top:0;opacity:0}
+
+/* Tela de resumo do pedido. Feita para o cliente tirar print e mandar, e para
+   o vendedor separar as cartas fisicas olhando a lista. */
+.recibo{padding:4px 0 2px}
+.rec-topo{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  padding-bottom:9px;margin-bottom:9px;border-bottom:1px solid var(--linha);
+}
+.rec-marca{font-size:15px;font-weight:800;color:var(--dourado)}
+.rec-data{font-size:11.5px;color:var(--txt3)}
+.rec-item{display:flex;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid #222836}
+.rec-item:last-child{border-bottom:0}
+.rec-q{flex:0 0 30px;font-size:13.5px;font-weight:800;color:var(--dourado)}
+.rec-n{flex:1 1 auto;font-size:13px;line-height:1.3}
+.rec-n small{display:block;color:var(--txt3);font-size:10.5px;margin-top:1px}
+.rec-v{flex:0 0 auto;font-size:13.5px;font-weight:700;white-space:nowrap}
+.rec-total{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-top:11px;padding-top:11px;border-top:2px solid var(--linha);
+}
+.rec-total span{font-size:13px;color:var(--txt2)}
+.rec-total strong{font-size:26px;color:var(--dourado);letter-spacing:-.6px}
+.rec-nota{
+  margin:12px 0 0;padding:9px 11px;border-radius:10px;
+  background:#1b2e44;border:1px solid #2f5273;color:#bfe0ff;
+  font-size:11.5px;line-height:1.45;text-align:center;
+}
+#copia-manual{margin-top:10px}
+#copia-manual p{margin:0 0 6px;font-size:11.5px;color:var(--txt2)}
+#copia-manual textarea{
+  width:100%;height:120px;padding:9px;border-radius:10px;resize:none;
+  background:var(--bg3);border:1px solid var(--linha);color:var(--txt);
+  font-size:12.5px;line-height:1.45;-webkit-appearance:none;
+}
+
+/* ----------------------------------------------------------- lightbox  */
+#modal-img .fundo{background:rgba(0,0,0,.9)}
+.zoom{position:relative;margin:auto;padding:16px;text-align:center;max-width:100%}
+.zoom img{max-width:min(92vw,420px);width:100%;border-radius:12px;display:block;margin:0 auto}
+.zoom .z-info{margin-top:12px;font-size:13px;color:var(--txt)}
+.zoom .z-info b{display:block;font-size:15px;margin-bottom:3px}
+.zoom .z-links{margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.zoom .z-links a{
+  padding:7px 12px;border-radius:9px;background:var(--bg3);border:1px solid var(--linha);
+  font-size:12px;font-weight:700;text-decoration:none;
+}
+.zoom .fechar{position:absolute;top:0;right:0}
+</style>
+<style>.img-1{background-image:url(https://cards.scryfall.io/small/front/2/b/2b9942a3-39e6-4e2c-918d-0c2e2f456135.jpg?1783939872)}.img-2{background-image:url(https://cards.scryfall.io/small/front/a/2/a2ee3c3c-768b-434b-a121-6d897b2ae345.jpg?1783934637)}.img-3{background-image:url(https://cards.scryfall.io/small/front/8/4/84ae9595-8e76-4d8c-a08c-00434be75672.jpg?1783932921)}.img-4{background-image:url(https://cards.scryfall.io/small/front/a/a/aaa05ad1-5cda-4edd-b6bf-562ae3e5011a.jpg?1783912002)}.img-5{background-image:url(https://cards.scryfall.io/small/front/5/5/55318397-de3c-47ea-a088-72a24df5c8fa.jpg?1783944419)}.img-6{background-image:url(https://cards.scryfall.io/small/front/3/3/33672990-4860-4aa6-ac1b-f9da66f5da59.jpg?1783941691)}</style>
+</head>
+<body>
+
+<noscript><div>Este painel precisa de JavaScript ativado para funcionar.</div></noscript>
+<div id="erro" hidden>Algo deu errado ao montar o painel.<code id="erro-msg"></code></div>
+
+<header class="topo">
+  <div class="marca">
+    <div class="marca-sigla">★</div>
+    <div class="marca-txt">
+      <h1>Bazar do Brandão</h1>
+      <p>Cartas que estou procurando</p>
+    </div>
+  </div>
+
+  <nav class="alternar"><a class="aba-have fora" href="have.html">HAVE</a><a class="aba-want aqui" href="want.html" aria-current="page">WANT</a></nav>
+
+  <div class="controles">
+  <div class="busca">
+    <svg class="lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+    <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Buscar pelo nome da carta...">
+    <button class="limpar" id="limpar" type="button" aria-label="Limpar busca" hidden>&#10005;</button>
+  </div>
+
+  <div class="filtros">
+    <div class="chips" id="chips-cor"></div>
+    <div class="chips" id="chips-tipo"></div>
+  </div>
+
+  <div class="linha-info">
+    <span class="cont" id="contador">&nbsp;</span>
+    <select id="ordem" aria-label="Ordenar a lista"><option value="nome" selected>Nome (A-Z)</option><option value="raridade">Raridade</option></select>
+  </div>
+  </div>
+</header>
+
+<main class="grade" id="grade"><article class="carta"><div class="moldura"><div class="fallback">Jace, the Mind Sculptor</div><div class="foto img-1"></div><span class="tag-foil">Foil</span></div><div class="corpo"><div class="nome">Jace, the Mind Sculptor</div><div class="nomept">Jace, o Escultor de Mentes</div><div class="meta">V13 &middot; Planeswalker</div><div class="procuro">Procuro 1x</div><div class="edicao-nota fixa">só From the Vault: Twenty &middot; Foil</div></div></article><article class="carta"><div class="moldura"><div class="fallback">Mu Yanling</div><div class="foto img-2"></div><span class="tag-foil">Foil</span></div><div class="corpo"><div class="nome">Mu Yanling</div><div class="meta">GS1 &middot; Planeswalker</div><div class="procuro">Procuro 1x</div><div class="edicao-nota">qualquer edição (só existe em Foil)</div></div></article><article class="carta"><div class="moldura"><div class="fallback">Mu Yanling, Celestial Wind</div><div class="foto img-3"></div><span class="tag-foil">Foil</span></div><div class="corpo"><div class="nome">Mu Yanling, Celestial Wind</div><div class="nomept">Mu Yanling, Vento Celestial</div><div class="meta">M20 &middot; Planeswalker</div><div class="procuro">Procuro 1x</div><div class="edicao-nota">qualquer edição (só existe em Foil)</div></div></article><article class="carta"><div class="moldura"><div class="fallback">Simulacrum Synthesizer</div><div class="foto img-4"></div></div><div class="corpo"><div class="nome">Simulacrum Synthesizer</div><div class="nomept">Sintetizador de Simulacros</div><div class="meta">BIG &middot; Artefato</div><div class="procuro">Procuro 1x</div><div class="edicao-nota">qualquer edição</div></div></article><article class="carta"><div class="moldura"><div class="fallback">Skullclamp</div><div class="foto img-5"></div></div><div class="corpo"><div class="nome">Skullclamp</div><div class="nomept">Pinça Craniana</div><div class="meta">DST &middot; Artefato</div><div class="procuro">Procuro 1x</div><div class="edicao-nota">qualquer edição</div></div></article><article class="carta"><div class="moldura"><div class="fallback">Wurmcoil Engine</div><div class="foto img-6"></div></div><div class="corpo"><div class="nome">Wurmcoil Engine</div><div class="nomept">Máquina a Vorme Espiralado</div><div class="meta">SOM &middot; Criatura, Artefato</div><div class="procuro">Procuro 1x</div><div class="edicao-nota">qualquer edição</div></div></article></main>
+<div class="carregando so-js" id="carregando" hidden>carregando mais...</div>
+<div id="sentinela"></div>
+<div id="vazio" hidden>Nenhuma carta encontrada com esses filtros.</div>
+
+<footer class="pe">
+  Tem alguma dessas? Me chame. Onde não digo a edição, qualquer versão serve.<br>
+  6 cartas procuradas &middot; atualizado em 27/09/2026<br>
+  Imagens e dados das cartas: Scryfall
+</footer>
+
+<div class="barra" id="barra" hidden>
+  <button id="abrir-carrinho" type="button">
+    <span id="barra-qtd">0 cartas</span>
+    <span id="barra-total">R$ 0,00</span>
+  </button>
+</div>
+
+<div class="modal" id="modal-carrinho" hidden>
+  <div class="fundo" data-fechar="1"></div>
+  <div class="folha">
+    <div class="folha-topo">
+      <h2>Seu pedido</h2>
+      <button class="fechar" type="button" data-fechar="1" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="folha-lista" id="lista-carrinho"></div>
+    <div class="folha-pe">
+      <div class="total">
+        <span id="resumo-qtd">0 cartas</span>
+        <strong id="resumo-total">R$ 0,00</strong>
+      </div>
+      <div class="botoes">
+        <button type="button" class="perigo" id="limpar-carrinho">Limpar</button>
+        <button type="button" class="primario" id="finalizar">Finalizar compra</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-resumo" hidden>
+  <div class="fundo" data-fechar="1"></div>
+  <div class="folha">
+    <div class="folha-topo">
+      <h2>Resumo do pedido</h2>
+      <button class="fechar" type="button" data-fechar="1" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="folha-lista" id="resumo-conteudo"></div>
+    <div class="folha-pe">
+      <div class="botoes">
+        <button type="button" id="voltar-carrinho">Voltar</button>
+        <button type="button" class="primario" id="copiar">Copiar texto</button>
+      </div>
+      <div class="aviso-copia" id="aviso-copia"></div>
+      <div id="copia-manual" hidden>
+        <p>Seu navegador não deixou copiar sozinho. Segure o texto abaixo e escolha <b>Copiar</b>:</p>
+        <textarea id="texto-manual" readonly></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-img" hidden>
+  <div class="fundo" data-fechar="1"></div>
+  <div class="zoom" id="zoom-conteudo"></div>
+</div>
+
+<textarea id="area-copia" readonly aria-hidden="true"></textarea>
+
+<script id="dados" type="application/json">{"loja":"Bazar do Brandão","modo":"want","ordem_inicial":"nome","whatsapp":"","lote":36,"cartas":[{"id":"2b9942a3-39e6-4e2c-918d-0c2e2f456135|foil","nome":"Jace, the Mind Sculptor","nome_pt":"Jace, o Escultor de Mentes","set_code":"V13","set_nome":"From the Vault: Twenty","num":"18","raridade":"mythic","tipo_linha":"Legendary Planeswalker — Jace","tipos":["Planeswalker"],"tipos_txt":"Planeswalker","filtro_cor":["U"],"acabamento":"foil","acabamento_pt":"Foil","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/2/b/2b9942a3-39e6-4e2c-918d-0c2e2f456135.jpg?1783939872","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Jace%2C+the+Mind+Sculptor","url_scryfall":"https://scryfall.com/card/v13/18/jace-the-mind-sculptor?utm_source=api","busca":"jace, the mind sculptor jace, o escultor de mentes v13 from the vault: twenty legendary planeswalker — jace planeswalker foil #18","edicao_importa":true,"ic":1},{"id":"a2ee3c3c-768b-434b-a121-6d897b2ae345|foil","nome":"Mu Yanling","nome_pt":"","set_code":"GS1","set_nome":"Global Series Jiang Yanggu & Mu Yanling","num":"1","raridade":"mythic","tipo_linha":"Legendary Planeswalker — Yanling","tipos":["Planeswalker"],"tipos_txt":"Planeswalker","filtro_cor":["U"],"acabamento":"foil","acabamento_pt":"Foil","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/a/2/a2ee3c3c-768b-434b-a121-6d897b2ae345.jpg?1783934637","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Mu+Yanling","url_scryfall":"https://scryfall.com/card/gs1/1/mu-yanling?utm_source=api","busca":"mu yanling gs1 global series jiang yanggu & mu yanling legendary planeswalker — yanling planeswalker foil #1","edicao_importa":false,"ic":2},{"id":"84ae9595-8e76-4d8c-a08c-00434be75672|foil","nome":"Mu Yanling, Celestial Wind","nome_pt":"Mu Yanling, Vento Celestial","set_code":"M20","set_nome":"Core Set 2020","num":"286","raridade":"mythic","tipo_linha":"Legendary Planeswalker — Yanling","tipos":["Planeswalker"],"tipos_txt":"Planeswalker","filtro_cor":["U"],"acabamento":"foil","acabamento_pt":"Foil","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/8/4/84ae9595-8e76-4d8c-a08c-00434be75672.jpg?1783932921","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Mu+Yanling%2C+Celestial+Wind","url_scryfall":"https://scryfall.com/card/m20/286/mu-yanling-celestial-wind?utm_source=api","busca":"mu yanling, celestial wind mu yanling, vento celestial m20 core set 2020 legendary planeswalker — yanling planeswalker foil #286","edicao_importa":false,"ic":3},{"id":"aaa05ad1-5cda-4edd-b6bf-562ae3e5011a|qualquer","nome":"Simulacrum Synthesizer","nome_pt":"Sintetizador de Simulacros","set_code":"BIG","set_nome":"The Big Score","num":"6","raridade":"mythic","tipo_linha":"Artifact","tipos":["Artefato"],"tipos_txt":"Artefato","filtro_cor":["U"],"acabamento":"normal","acabamento_pt":"","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/a/a/aaa05ad1-5cda-4edd-b6bf-562ae3e5011a.jpg?1783912002","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Simulacrum+Synthesizer","url_scryfall":"https://scryfall.com/card/big/6/simulacrum-synthesizer?utm_source=api","busca":"simulacrum synthesizer sintetizador de simulacros big the big score artifact artefato #6","edicao_importa":false,"ic":4},{"id":"55318397-de3c-47ea-a088-72a24df5c8fa|qualquer","nome":"Skullclamp","nome_pt":"Pinça Craniana","set_code":"DST","set_nome":"Darksteel","num":"140","raridade":"uncommon","tipo_linha":"Artifact — Equipment","tipos":["Artefato"],"tipos_txt":"Artefato","filtro_cor":["C"],"acabamento":"normal","acabamento_pt":"","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/5/5/55318397-de3c-47ea-a088-72a24df5c8fa.jpg?1783944419","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Skullclamp","url_scryfall":"https://scryfall.com/card/dst/140/skullclamp?utm_source=api","busca":"skullclamp pinca craniana dst darksteel artifact — equipment artefato #140","edicao_importa":false,"ic":5},{"id":"33672990-4860-4aa6-ac1b-f9da66f5da59|qualquer","nome":"Wurmcoil Engine","nome_pt":"Máquina a Vorme Espiralado","set_code":"SOM","set_nome":"Scars of Mirrodin","num":"223","raridade":"mythic","tipo_linha":"Artifact Creature — Phyrexian Wurm","tipos":["Criatura","Artefato"],"tipos_txt":"Criatura, Artefato","filtro_cor":["C"],"acabamento":"normal","acabamento_pt":"","qtd":1,"img_grande":"https://cards.scryfall.io/normal/front/3/3/33672990-4860-4aa6-ac1b-f9da66f5da59.jpg?1783941691","url_liga":"https://www.ligamagic.com.br/?view=cards/card&card=Wurmcoil+Engine","url_scryfall":"https://scryfall.com/card/som/223/wurmcoil-engine?utm_source=api","busca":"wurmcoil engine maquina a vorme espiralado som scars of mirrodin artifact creature — phyrexian wurm criatura artefato #223","edicao_importa":false,"ic":6}]}</script>
+<script>
+(function () {
+  "use strict";
+
+  /* Falha visivel em vez de pagina em branco -- foi o motivo de paineis
+     anteriores parecerem "nao abrir por completo" no iPhone. */
+  function mostrarErro(msg) {
+    try {
+      var box = document.getElementById("erro");
+      var cod = document.getElementById("erro-msg");
+      if (cod) { cod.textContent = String(msg); }
+      if (box) { box.hidden = false; }
+    } catch (e) {}
+  }
+  window.onerror = function (msg, arq, lin) { mostrarErro(msg + " (linha " + lin + ")"); };
+
+  try {
+
+  var DADOS = JSON.parse(document.getElementById("dados").textContent);
+  var CARTAS = DADOS.cartas;
+  var LOTE = DADOS.lote || 36;
+  var WHATS = DADOS.whatsapp || "";
+  var WANT = DADOS.modo === "want";   /* lista de procura: sem preco e sem carrinho */
+  var NOME_LOJA = DADOS.loja || "Cards";
+
+  /* ------------------------------------------------------------ estado */
+  var estado = {
+    busca: "",
+    cores: {},   // sigla -> true
+    tipos: {},   // nome  -> true
+    foil: false,
+    ordem: DADOS.ordem_inicial || "nome",
+    visiveis: LOTE
+  };
+  var carrinho = {};       // id -> quantidade
+  var filtradas = CARTAS;
+
+  var CHAVE_LS = "pedido-cards-v1";   /* so o painel HAVE usa carrinho */
+
+  function lerCarrinho() {
+    if (WANT) { return; }
+    try {
+      var cru = window.localStorage.getItem(CHAVE_LS);
+      if (!cru) { return; }
+      var obj = JSON.parse(cru);
+      for (var id in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, id) && mapa[id]) {
+          var n = parseInt(obj[id], 10);
+          if (n > 0) { carrinho[id] = Math.min(n, mapa[id].qtd); }
+        }
+      }
+    } catch (e) {}
+  }
+  function gravarCarrinho() {
+    try { window.localStorage.setItem(CHAVE_LS, JSON.stringify(carrinho)); } catch (e) {}
+  }
+
+  var mapa = {};
+  for (var i = 0; i < CARTAS.length; i++) { mapa[CARTAS[i].id] = CARTAS[i]; }
+
+  /* ---------------------------------------------------------- formatos */
+  function brl(v) {
+    var n = Math.round(v * 100) / 100;
+    var s = n.toFixed(2).replace(".", ",");
+    return "R$ " + s.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+  function esc(s) {
+    return String(s === null || s === undefined ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function normalizar(s) {
+    s = String(s || "").toLowerCase();
+    if (s.normalize) { s = s.normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+    return s;
+  }
+
+  /* ----------------------------------------------------------- filtros */
+  var ORDEM_RARIDADE = { mythic: 0, rare: 1, special: 2, uncommon: 3, common: 4, bonus: 2 };
+
+  function aplicar() {
+    var termo = normalizar(estado.busca).replace(/\s+/g, " ").trim();
+    var termos = termo ? termo.split(" ") : [];
+    var temCor = false, temTipo = false, k;
+    for (k in estado.cores) { if (estado.cores[k]) { temCor = true; break; } }
+    for (k in estado.tipos) { if (estado.tipos[k]) { temTipo = true; break; } }
+
+    var saida = [];
+    for (var i = 0; i < CARTAS.length; i++) {
+      var c = CARTAS[i];
+
+      if (estado.foil && c.acabamento === "normal") { continue; }
+
+      if (termos.length) {
+        var ok = true;
+        for (var t = 0; t < termos.length; t++) {
+          if (c.busca.indexOf(termos[t]) === -1) { ok = false; break; }
+        }
+        if (!ok) { continue; }
+      }
+
+      if (temCor) {
+        var achouCor = false;
+        for (var a = 0; a < c.filtro_cor.length; a++) {
+          if (estado.cores[c.filtro_cor[a]]) { achouCor = true; break; }
+        }
+        if (!achouCor) { continue; }
+      }
+
+      if (temTipo) {
+        var achouTipo = false;
+        for (var b = 0; b < c.tipos.length; b++) {
+          if (estado.tipos[c.tipos[b]]) { achouTipo = true; break; }
+        }
+        if (!achouTipo) { continue; }
+      }
+
+      saida.push(c);
+    }
+
+    var o = estado.ordem;
+    saida.sort(function (x, y) {
+      if (o === "menor") { return x.preco - y.preco || x.nome.localeCompare(y.nome); }
+      if (o === "maior") { return y.preco - x.preco || x.nome.localeCompare(y.nome); }
+      if (o === "raridade") {
+        var rx = ORDEM_RARIDADE[x.raridade], ry = ORDEM_RARIDADE[y.raridade];
+        if (rx === undefined) { rx = 9; }
+        if (ry === undefined) { ry = 9; }
+        return rx - ry || y.preco - x.preco;
+      }
+      return x.nome.localeCompare(y.nome);
+    });
+
+    filtradas = saida;
+    estado.visiveis = LOTE;
+    desenharGrade(true);
+    atualizarContador();
+  }
+
+  function atualizarContador() {
+    var soma = 0;
+    for (var i = 0; i < filtradas.length; i++) { soma += filtradas[i].qtd; }
+    var el = document.getElementById("contador");
+    if (filtradas.length !== CARTAS.length) {
+      el.textContent = filtradas.length + " de " + CARTAS.length + (WANT ? " procuradas" : " modelos");
+    } else if (WANT) {
+      el.textContent = filtradas.length + (filtradas.length === 1 ? " carta procurada" : " cartas procuradas");
+    } else {
+      el.textContent = filtradas.length + " modelos · " + soma + " cartas";
+    }
+  }
+
+  /* ------------------------------------------------------------- grade */
+  function htmlCarta(c) {
+    var q = carrinho[c.id] || 0;
+    var esgotado = q >= c.qtd;
+
+    var h = '<article class="carta' + (q ? " no-carrinho" : "") + '" data-id="' + esc(c.id) + '">';
+    h += '<div class="moldura" data-zoom="1">';
+    h += '<div class="fallback">' + esc(c.nome) + "</div>";
+    if (c.ic) { h += '<div class="foto img-' + c.ic + '"></div>'; }
+    if (c.acabamento !== "normal") { h += '<span class="tag-foil">' + esc(c.acabamento_pt) + "</span>"; }
+    if (WANT) {
+      if (c.qtd > 1) { h += '<span class="tag-qtd">' + c.qtd + "x</span>"; }
+    } else {
+      if (q) { h += '<span class="tag-qtd">' + q + "</span>"; }
+      if (c.qtd > 1) { h += '<span class="tag-estoque">' + c.qtd + " un</span>"; }
+    }
+    h += "</div>";
+
+    h += '<div class="corpo">';
+    h += '<div class="nome">' + esc(c.nome) + "</div>";
+    if (c.nome_pt) { h += '<div class="nomept">' + esc(c.nome_pt) + "</div>"; }
+    h += '<div class="meta">' + esc(c.set_code) + " · " + esc(c.tipos.join(", ")) + "</div>";
+    if (WANT) {
+      h += '<div class="procuro">Procuro ' + c.qtd + "x</div>";
+      if (c.edicao_importa) {
+        h += '<div class="edicao-nota fixa">só ' + esc(c.set_nome || c.set_code) +
+             (c.acabamento_pt ? " · " + esc(c.acabamento_pt) : "") + "</div>";
+      } else {
+        h += '<div class="edicao-nota">qualquer edição' +
+             (c.acabamento_pt ? " (só existe em " + esc(c.acabamento_pt) + ")" : "") + "</div>";
+      }
+      h += "</div></article>";
+      return h;
+    }
+
+    h += '<div class="preco">' + brl(c.preco) + "</div>";
+
+    h += '<div class="acao">';
+    if (q > 0) {
+      h += '<div class="stepper">' +
+           '<button type="button" data-menos="1" aria-label="Remover um">&#8722;</button>' +
+           '<span class="n">' + q + "</span>" +
+           '<button type="button" data-mais="1" aria-label="Adicionar um"' + (esgotado ? " disabled" : "") + ">+</button>" +
+           "</div>";
+    } else {
+      h += '<button type="button" class="btn-add" data-mais="1">+ Adicionar</button>';
+    }
+    h += "</div></div></article>";
+    return h;
+  }
+
+  function desenharGrade(reiniciar) {
+    var grade = document.getElementById("grade");
+    var lista = filtradas.slice(0, estado.visiveis);
+    var partes = [];
+    for (var i = 0; i < lista.length; i++) { partes.push(htmlCarta(lista[i])); }
+    grade.innerHTML = partes.join("");
+
+    document.getElementById("vazio").hidden = filtradas.length !== 0;
+    document.getElementById("carregando").hidden = estado.visiveis >= filtradas.length;
+    if (reiniciar) { window.scrollTo(0, 0); }
+  }
+
+  function atualizarCarta(id) {
+    var c = mapa[id];
+    if (!c) { return; }
+    var el = document.querySelector('.carta[data-id="' + id.replace(/"/g, '\\"') + '"]');
+    if (!el) { return; }
+    var novo = document.createElement("div");
+    novo.innerHTML = htmlCarta(c);
+    el.parentNode.replaceChild(novo.firstChild, el);
+  }
+
+  /* --------------------------------------------------------- carrinho */
+  function totais() {
+    var qtd = 0, valor = 0;
+    for (var id in carrinho) {
+      if (!Object.prototype.hasOwnProperty.call(carrinho, id)) { continue; }
+      var c = mapa[id];
+      if (!c) { continue; }
+      qtd += carrinho[id];
+      valor += carrinho[id] * c.preco;
+    }
+    return { qtd: qtd, valor: valor };
+  }
+
+  function pintarCarrinho() {
+    if (WANT) { return; }
+    var t = totais();
+    var barra = document.getElementById("barra");
+    barra.hidden = t.qtd === 0;
+    document.getElementById("barra-qtd").textContent = t.qtd + (t.qtd === 1 ? " carta" : " cartas");
+    document.getElementById("barra-total").textContent = brl(t.valor);
+    document.getElementById("resumo-qtd").textContent = t.qtd + (t.qtd === 1 ? " carta" : " cartas");
+    document.getElementById("resumo-total").textContent = brl(t.valor);
+
+    var lista = document.getElementById("lista-carrinho");
+    if (t.qtd === 0) {
+      lista.innerHTML = '<div style="padding:26px 0;text-align:center;color:var(--txt3);font-size:13px">Seu pedido está vazio.<br>Toque em <b>+ Adicionar</b> nas cartas.</div>';
+      return;
+    }
+    var itens = [];
+    for (var id in carrinho) {
+      if (Object.prototype.hasOwnProperty.call(carrinho, id) && mapa[id]) { itens.push(mapa[id]); }
+    }
+    itens.sort(function (a, b) { return a.nome.localeCompare(b.nome); });
+
+    var partes = [];
+    for (var i = 0; i < itens.length; i++) {
+      var c = itens[i], q = carrinho[c.id];
+      partes.push(
+        '<div class="item" data-id="' + esc(c.id) + '">' +
+          '<div class="it-foto' + (c.ic ? " img-" + c.ic : "") + '"></div>' +
+          "<div>" +
+            '<div class="it-nome">' + esc(c.nome) + "</div>" +
+            '<div class="it-meta">' + esc(c.set_code) + " · " + esc(c.acabamento_pt) + " · " + brl(c.preco) + " cada</div>" +
+          "</div>" +
+          '<div class="it-dir">' +
+            '<div class="it-preco">' + brl(c.preco * q) + "</div>" +
+            '<div class="stepper">' +
+              '<button type="button" data-menos="1">&#8722;</button>' +
+              '<span class="n">' + q + "</span>" +
+              '<button type="button" data-mais="1"' + (q >= c.qtd ? " disabled" : "") + ">+</button>" +
+            "</div>" +
+          "</div>" +
+        "</div>"
+      );
+    }
+    lista.innerHTML = partes.join("");
+  }
+
+  function mudar(id, delta) {
+    if (WANT) { return; }
+    var c = mapa[id];
+    if (!c) { return; }
+    var q = (carrinho[id] || 0) + delta;
+    if (q <= 0) { delete carrinho[id]; } else { carrinho[id] = Math.min(q, c.qtd); }
+    gravarCarrinho();
+    atualizarCarta(id);
+    pintarCarrinho();
+  }
+
+  function textoPedido() {
+    var itens = [];
+    for (var id in carrinho) {
+      if (Object.prototype.hasOwnProperty.call(carrinho, id) && mapa[id]) { itens.push(mapa[id]); }
+    }
+    itens.sort(function (a, b) { return a.nome.localeCompare(b.nome); });
+
+    var linhas = ["*Pedido - " + NOME_LOJA + "*", ""];
+    for (var i = 0; i < itens.length; i++) {
+      var c = itens[i], q = carrinho[c.id];
+      linhas.push(
+        q + "x " + c.nome + " (" + c.set_code +
+        (c.acabamento === "normal" ? "" : " " + c.acabamento_pt) + ") - " + brl(c.preco * q)
+      );
+    }
+    var t = totais();
+    linhas.push("");
+    linhas.push("Total: " + brl(t.valor) + " (" + t.qtd + (t.qtd === 1 ? " carta)" : " cartas)"));
+    return linhas.join("\n");
+  }
+
+  function copiarPedido() {
+    var texto = textoPedido();
+    var aviso = document.getElementById("aviso-copia");
+
+    var manual = document.getElementById("copia-manual");
+
+    function ok() {
+      manual.hidden = true;
+      aviso.textContent = "Pedido copiado! Cole na conversa com o vendedor.";
+      window.setTimeout(function () { aviso.textContent = ""; }, 4000);
+    }
+
+    /* Ultimo recurso: mostra o texto ja selecionado para a pessoa copiar na
+       mao. Vale principalmente no Safari do iPhone, onde a copia automatica
+       as vezes e bloqueada. */
+    function manualmente() {
+      aviso.textContent = "";
+      manual.hidden = false;
+      var campo = document.getElementById("texto-manual");
+      campo.value = texto;
+      campo.focus();
+      try { campo.setSelectionRange(0, texto.length); } catch (e) {}
+      campo.scrollIntoView(false);
+    }
+    function fallback() {
+      var ta = document.getElementById("area-copia");
+      ta.value = texto;
+      ta.removeAttribute("readonly");
+      ta.style.left = "0";
+      ta.style.opacity = "0";
+      ta.focus();
+      ta.setSelectionRange(0, texto.length);
+      var deu = false;
+      try { deu = document.execCommand("copy"); } catch (e) { deu = false; }
+      ta.setAttribute("readonly", "readonly");
+      ta.style.left = "-9999px";
+      if (deu) { ok(); } else { manualmente(); }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(ok, fallback);
+    } else {
+      fallback();
+    }
+
+    if (WHATS) {
+      window.open("https://wa.me/" + WHATS + "?text=" + encodeURIComponent(texto), "_blank");
+    }
+  }
+
+  /* ------------------------------------------------------------ resumo */
+
+  /* Tela que o cliente printa e manda. O vendedor separa as cartas fisicas
+     olhando esta lista, por isso ela traz edicao e acabamento de cada carta. */
+  function montarResumo() {
+    var itens = [];
+    for (var id in carrinho) {
+      if (Object.prototype.hasOwnProperty.call(carrinho, id) && mapa[id]) { itens.push(mapa[id]); }
+    }
+    itens.sort(function (a, b) { return a.nome.localeCompare(b.nome); });
+
+    var t = totais();
+    var agora = new Date();
+    var dia = ("0" + agora.getDate()).slice(-2) + "/" +
+              ("0" + (agora.getMonth() + 1)).slice(-2) + "/" + agora.getFullYear();
+
+    var h = [];
+    h.push('<div class="recibo">');
+    h.push('<div class="rec-topo"><span class="rec-marca">' + esc(NOME_LOJA) +
+           '</span><span class="rec-data">' + dia + "</span></div>");
+
+    for (var i = 0; i < itens.length; i++) {
+      var c = itens[i], q = carrinho[c.id];
+      var det = c.set_code;
+      if (c.acabamento !== "normal" && c.acabamento_pt) { det += " · " + c.acabamento_pt; }
+      det += " · " + brl(c.preco) + " cada";
+      h.push('<div class="rec-item"><span class="rec-q">' + q + "x</span>" +
+             '<span class="rec-n">' + esc(c.nome) + "<small>" + esc(det) + "</small></span>" +
+             '<span class="rec-v">' + brl(c.preco * q) + "</span></div>");
+    }
+
+    h.push('<div class="rec-total"><span>' + t.qtd + (t.qtd === 1 ? " carta" : " cartas") +
+           "</span><strong>" + brl(t.valor) + "</strong></div>");
+    h.push('<p class="rec-nota">Tire um print desta tela e mande para o vendedor ' +
+           "separar as cartas.</p>");
+    h.push("</div>");
+    document.getElementById("resumo-conteudo").innerHTML = h.join("");
+  }
+
+  /* ------------------------------------------------------------ modais */
+  function abrir(id) { document.getElementById(id).hidden = false; document.body.style.overflow = "hidden"; }
+  function fechar(id) { document.getElementById(id).hidden = true; document.body.style.overflow = ""; }
+
+  function abrirZoom(c) {
+    var h = "";
+    h += '<button class="fechar" type="button" data-fechar="1" aria-label="Fechar">&#10005;</button>';
+    if (c.img_grande) {
+      h += '<img src="' + esc(c.img_grande) + '" alt="' + esc(c.nome) + '">';
+    }
+    h += '<div class="z-info"><b>' + esc(c.nome) + "</b>";
+    if (c.nome_pt) { h += esc(c.nome_pt) + "<br>"; }
+    h += esc(c.set_nome || c.set_code) + " · #" + esc(c.num) + "<br>";
+    h += esc(c.tipo_linha) + "<br>";
+    if (WANT) {
+      h += '<span style="color:#8fc5f5;font-weight:800;font-size:17px">Procuro ' + c.qtd + "x</span><br>";
+      h += c.edicao_importa
+        ? '<span style="color:#bfe0ff">só esta edição' + (c.acabamento_pt ? ", em " + esc(c.acabamento_pt) : "") + "</span>"
+        : '<span style="color:var(--txt3)">qualquer edição serve' +
+          (c.acabamento_pt ? " (só existe em " + esc(c.acabamento_pt) + ")" : "") + "</span>";
+      h += "</div>";
+    } else {
+      var detalhes = [];
+      if (c.acabamento_pt) { detalhes.push(esc(c.acabamento_pt)); }
+      if (c.condicao_pt) { detalhes.push(esc(c.condicao_pt)); }
+      if (c.idioma) { detalhes.push(esc(c.idioma)); }
+      detalhes.push(c.qtd + " em estoque");
+      h += detalhes.join(" · ") + "<br>";
+      h += '<span style="color:var(--dourado);font-weight:800;font-size:17px">' + brl(c.preco) + "</span></div>";
+    }
+    h += '<div class="z-links">';
+    if (c.url_liga) { h += '<a href="' + esc(c.url_liga) + '" target="_blank" rel="noopener">Ver na LigaMagic</a>'; }
+    if (c.url_scryfall) { h += '<a href="' + esc(c.url_scryfall) + '" target="_blank" rel="noopener">Ver no Scryfall</a>'; }
+    h += "</div>";
+    document.getElementById("zoom-conteudo").innerHTML = h;
+    abrir("modal-img");
+  }
+
+  /* ------------------------------------------------------------ chips  */
+  function montarChips() {
+    var cores = [
+      { k: "W", n: "Branco" }, { k: "U", n: "Azul" }, { k: "B", n: "Preto" },
+      { k: "R", n: "Vermelho" }, { k: "G", n: "Verde" },
+      { k: "C", n: "Incolor" }, { k: "M", n: "Multicolor" }
+    ];
+    var usadas = {};
+    var tiposUsados = {};
+    var temFoil = false;
+    for (var i = 0; i < CARTAS.length; i++) {
+      var c = CARTAS[i];
+      for (var a = 0; a < c.filtro_cor.length; a++) { usadas[c.filtro_cor[a]] = true; }
+      for (var b = 0; b < c.tipos.length; b++) { tiposUsados[c.tipos[b]] = (tiposUsados[c.tipos[b]] || 0) + 1; }
+      if (c.acabamento !== "normal") { temFoil = true; }
+    }
+
+    var hc = [];
+    for (var j = 0; j < cores.length; j++) {
+      if (!usadas[cores[j].k]) { continue; }
+      hc.push('<button type="button" class="chip" data-cor="' + cores[j].k + '">' +
+              '<span class="pip pip-' + cores[j].k + '"></span>' + cores[j].n + "</button>");
+    }
+    if (temFoil) { hc.push('<button type="button" class="chip" data-foil="1">✨ Foil</button>'); }
+    document.getElementById("chips-cor").innerHTML = hc.join("");
+
+    var ordemTipos = ["Criatura", "Instantanea", "Feitico", "Artefato", "Encantamento",
+                      "Terreno", "Planeswalker", "Batalha", "Tribal", "Outro"];
+    var rotulos = { Instantanea: "Instantânea", Feitico: "Feitiço" };
+    var ht = [];
+    for (var t = 0; t < ordemTipos.length; t++) {
+      var nome = ordemTipos[t];
+      if (!tiposUsados[nome]) { continue; }
+      ht.push('<button type="button" class="chip" data-tipo="' + esc(nome) + '">' +
+              esc(rotulos[nome] || nome) + ' <span style="opacity:.6">' + tiposUsados[nome] + "</span></button>");
+    }
+    document.getElementById("chips-tipo").innerHTML = ht.join("");
+  }
+
+  /* ------------------------------------------------------------ eventos */
+  function achar(alvo, attr) {
+    while (alvo && alvo !== document.body) {
+      if (alvo.getAttribute && alvo.getAttribute(attr) !== null) { return alvo; }
+      alvo = alvo.parentNode;
+    }
+    return null;
+  }
+
+  document.addEventListener("click", function (ev) {
+    var alvo = ev.target;
+
+    var fecharBtn = achar(alvo, "data-fechar");
+    if (fecharBtn) {
+      fechar("modal-carrinho"); fechar("modal-resumo"); fechar("modal-img");
+      return;
+    }
+
+    var chipCor = achar(alvo, "data-cor");
+    if (chipCor) {
+      var k = chipCor.getAttribute("data-cor");
+      estado.cores[k] = !estado.cores[k];
+      chipCor.className = "chip" + (estado.cores[k] ? " on" : "");
+      aplicar();
+      return;
+    }
+
+    var chipFoil = achar(alvo, "data-foil");
+    if (chipFoil) {
+      estado.foil = !estado.foil;
+      chipFoil.className = "chip" + (estado.foil ? " on" : "");
+      aplicar();
+      return;
+    }
+
+    var chipTipo = achar(alvo, "data-tipo");
+    if (chipTipo) {
+      var nome = chipTipo.getAttribute("data-tipo");
+      estado.tipos[nome] = !estado.tipos[nome];
+      chipTipo.className = "chip" + (estado.tipos[nome] ? " on" : "");
+      aplicar();
+      return;
+    }
+
+    var linha = achar(alvo, "data-id");
+    if (linha) {
+      var id = linha.getAttribute("data-id");
+      if (achar(alvo, "data-mais")) { mudar(id, 1); return; }
+      if (achar(alvo, "data-menos")) { mudar(id, -1); return; }
+      if (achar(alvo, "data-zoom") && mapa[id]) { abrirZoom(mapa[id]); return; }
+    }
+  }, false);
+
+  var timer = null;
+  document.getElementById("q").addEventListener("input", function (ev) {
+    var v = ev.target.value;
+    document.getElementById("limpar").hidden = !v;
+    if (timer) { window.clearTimeout(timer); }
+    timer = window.setTimeout(function () { estado.busca = v; aplicar(); }, 130);
+  }, false);
+
+  document.getElementById("limpar").addEventListener("click", function () {
+    var q = document.getElementById("q");
+    q.value = ""; estado.busca = "";
+    document.getElementById("limpar").hidden = true;
+    aplicar();
+  }, false);
+
+  document.getElementById("ordem").addEventListener("change", function (ev) {
+    estado.ordem = ev.target.value; aplicar();
+  }, false);
+
+  document.getElementById("abrir-carrinho").addEventListener("click", function () {
+    pintarCarrinho(); abrir("modal-carrinho");
+  }, false);
+
+  document.getElementById("finalizar").addEventListener("click", function () {
+    if (totais().qtd === 0) { return; }
+    montarResumo();
+    fechar("modal-carrinho");
+    abrir("modal-resumo");
+  }, false);
+
+  document.getElementById("voltar-carrinho").addEventListener("click", function () {
+    fechar("modal-resumo");
+    pintarCarrinho();
+    abrir("modal-carrinho");
+  }, false);
+
+  document.getElementById("copiar").addEventListener("click", copiarPedido, false);
+
+  document.getElementById("limpar-carrinho").addEventListener("click", function () {
+    if (!window.confirm("Limpar o pedido inteiro?")) { return; }
+    var ids = [];
+    for (var id in carrinho) { if (Object.prototype.hasOwnProperty.call(carrinho, id)) { ids.push(id); } }
+    carrinho = {};
+    gravarCarrinho();
+    for (var i = 0; i < ids.length; i++) { atualizarCarta(ids[i]); }
+    pintarCarrinho();
+  }, false);
+
+  /* rolagem infinita; se o navegador nao tiver IntersectionObserver,
+     cai no evento de scroll */
+  function carregarMais() {
+    if (estado.visiveis >= filtradas.length) { return; }
+    estado.visiveis += LOTE;
+    desenharGrade(false);
+  }
+  if (window.IntersectionObserver) {
+    new window.IntersectionObserver(function (entradas) {
+      for (var i = 0; i < entradas.length; i++) {
+        if (entradas[i].isIntersecting) { carregarMais(); }
+      }
+    }, { rootMargin: "700px" }).observe(document.getElementById("sentinela"));
+  } else {
+    window.addEventListener("scroll", function () {
+      if (window.pageYOffset + window.innerHeight > document.body.scrollHeight - 800) { carregarMais(); }
+    }, false);
+  }
+
+  /* --------------------------------------------------------------- boot */
+  montarChips();
+  document.getElementById("ordem").value = estado.ordem;
+  lerCarrinho();
+  aplicar();
+  pintarCarrinho();
+
+  /* Chegou aqui, entao o script rodou inteiro: pode liberar a busca, os
+     filtros e os botoes de adicionar. */
+  document.documentElement.className += " js";
+
+  } catch (e) {
+    mostrarErro((e && e.message ? e.message : e) + "");
+  }
+})();
+</script>
+</body>
+</html>
