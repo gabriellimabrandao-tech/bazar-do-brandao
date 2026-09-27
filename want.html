@@ -420,6 +420,8 @@ html.js .acao{margin-top:7px}
 
   /* Falha visivel em vez de pagina em branco -- foi o motivo de paineis
      anteriores parecerem "nao abrir por completo" no iPhone. */
+  var montou = false;   /* vira true quando o boot termina inteiro */
+
   function mostrarErro(msg) {
     try {
       var box = document.getElementById("erro");
@@ -428,7 +430,16 @@ html.js .acao{margin-top:7px}
       if (box) { box.hidden = false; }
     } catch (e) {}
   }
-  window.onerror = function (msg, arq, lin) { mostrarErro(msg + " (linha " + lin + ")"); };
+  window.onerror = function (msg, arq, lin) {
+    /* "Script error." sem arquivo e na linha 0 vem de script de OUTRA origem:
+       extensao do navegador, bloqueador de conteudo, injecao do proprio
+       Safari. Nao e do painel e nao traz informacao nenhuma. */
+    if (!arq && !lin) { return; }
+    /* Se o painel ja montou, a pessoa esta usando normalmente -- nao faz
+       sentido cobrir a tela com banner de erro. Fica no console. */
+    if (montou) { return; }
+    mostrarErro(msg + " (linha " + lin + ")");
+  };
 
   try {
 
@@ -1025,6 +1036,7 @@ html.js .acao{margin-top:7px}
   /* Chegou aqui, entao o script rodou inteiro: pode liberar a busca, os
      filtros e os botoes de adicionar. */
   document.documentElement.className += " js";
+  montou = true;
 
   } catch (e) {
     mostrarErro((e && e.message ? e.message : e) + "");
